@@ -153,6 +153,7 @@ int main()
 	// Defining the origin point on the sprite sheet to draw the correct sprite  
 	Rectangle sourceRect = { 0, 0, player.SPRITE_WIDTH, player.SPRITE_HEIGHT }; 
 
+
 	int frameCounter = 0; 
 	int currentFrame = 0; 
 	int frameSpeed = 6; 
