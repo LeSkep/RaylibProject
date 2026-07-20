@@ -5,13 +5,15 @@ enum PlayerState
 {
 	IDLE,
 	WALKING,
-	RUNNING
+	RUNNING,
+	DODGE
 };
 
 struct Player {
 	Vector2 position;
 	float speed;
 	float runSpeedMultiplier;
+	float dodgeSpeedMultiplier;
 	Texture2D playerIdleTexture; 
 	Texture2D playerWalkTexture;
 	Texture2D playerRunTexture; 
@@ -35,6 +37,7 @@ void updatePlayerMovement(Player& player, float dt, Rectangle& sourceRect, int& 
 	if (IsKeyDown(KEY_S)) dy += 1.0f;
 	if (IsKeyDown(KEY_A)) dx -= 1.0f;
 	if (IsKeyDown(KEY_D)) dx += 1.0f;
+	//if (IsKeyDown(KEY_SPACE))
 
 	// Normalize diagonal movement so speed is consistent
 	if (dx != 0 && dy != 0)
@@ -46,11 +49,16 @@ void updatePlayerMovement(Player& player, float dt, Rectangle& sourceRect, int& 
 
 	bool isMoving = (dx != 0 || dy != 0); 
 	bool isRunning = isMoving && IsKeyDown(KEY_LEFT_SHIFT); 
+	bool isDodge = isMoving && IsKeyDown(KEY_SPACE);
 
 
 	if (isRunning) 
 	{
 		player.playerState = RUNNING;
+	}
+	else if (isDodge)
+	{
+		player.playerState = DODGE;
 	}
 	else if (isMoving) 
 	{
@@ -63,9 +71,17 @@ void updatePlayerMovement(Player& player, float dt, Rectangle& sourceRect, int& 
 
 	float currentSpeed = player.speed; 
 
-	if (player.playerState == RUNNING) { 
+	if (player.playerState == RUNNING) 
+	{ 
 		currentSpeed = player.speed * player.runSpeedMultiplier;   // This is the key line 
 	} 
+
+	if (player.playerState == DODGE)
+	{
+		player.position.x += dx * player.dodgeSpeedMultiplier; 
+		player.position.y += dy * player.dodgeSpeedMultiplier; 
+		std::cout << "dodge";
+	}
 
 	// Apply movement
 	player.position.x += dx * currentSpeed * dt;   
@@ -134,19 +150,30 @@ int main()
 	const int screenWidth = 800;
 	const int screenHeight = 600;
 	 
+	SetConfigFlags(FLAG_WINDOW_RESIZABLE); 
 	InitWindow(screenWidth, screenHeight, "Finally?"); 
 	SetTargetFPS(60); 
+	
 
 	Player player; 
 	player.position = { screenWidth / 2.0f, screenHeight / 2.0f }; 
 	player.speed = 120.0f; 
 	player.runSpeedMultiplier = 1.4f;
+	player.dodgeSpeedMultiplier = 4.0f;
 	player.playerWalkTexture = LoadTexture("./16x16/16x16 Walk-Sheet.png");
 	player.playerIdleTexture = LoadTexture("./16x16/16x16 Idle-Sheet.png"); 
 	player.playerRunTexture = LoadTexture("./16x16/16x16 Run-Sheet.png"); 
 	player.SPRITE_WIDTH = 24.0f; 
 	player.SPRITE_HEIGHT = 24.0f; 
 	player.isFacingLeft = false;
+
+	Camera2D camera = { 0 };
+	camera.target = Vector2{ player.position.x + 20.0f, player.position.y + 20.0f };
+	camera.offset = Vector2{ screenWidth / 2.0f, screenHeight / 2.0f };
+	camera.zoom = 0.9f;
+
+	Rectangle textContainerRect = Rectangle { (float)screenWidth / 2 - (float)screenWidth / 4, (float)screenHeight / 2 - (float)screenHeight / 3, (float)screenWidth / 2, (float)screenHeight * 2 / 3 };
+
 
 	
 
@@ -176,12 +203,27 @@ int main()
 		// Function to update the player movement based on input and dt 
 		updatePlayerMovement(player, dt, sourceRect, currentFrame, frameCounter, frameSpeed, idleFrameSpeed);
 
+		// Camera targeting the player
+		camera.target = Vector2{ player.position.x + 20.0f, player.position.y + 20.0f }; 
+
+		// Camera zoom controls
+		camera.zoom = expf(logf(camera.zoom) + ((float)GetMouseWheelMove() * 0.1f));
+
+		if (camera.zoom > 2.5f) camera.zoom = 2.5f;
+		else if (camera.zoom < 0.8f) camera.zoom = 0.8f;
+
+		if (IsKeyDown(KEY_R))
+		{
+			camera.zoom = 0.9f;
+		}
+
 		BeginDrawing();
 		// Clearing background before drawing
 		ClearBackground(RAYWHITE);
 
-		// Drawing the fps counter in the top left of the screen
-		DrawFPS(10, 10);
+		BeginMode2D(camera);
+
+		
 
 
 		// Defining the destination rectangle to draw the sprite at the player's position with a scale of 2.0f 
@@ -217,15 +259,20 @@ int main()
 			DrawTexturePro(player.playerRunTexture, drawRect, destRect, Vector2{ destRect.width / 2.0f, destRect.height / 2.0f }, 0.0f, WHITE); 
 		}
 		
+		// Drawing the fps counter in the top left of the screen
+		DrawFPS(10, 10);
 		
 
 		DrawText("Finally, light", 10, 30, 30, LIME); 
+		
 
 		EndDrawing();
 	}
 	// Unloading the texture so it doesn't stay loaded in memory causing performance issues 
 	UnloadTexture(player.playerWalkTexture);  
 	UnloadTexture(player.playerIdleTexture); 
+	UnloadTexture(player.playerRunTexture); 
+	EndMode2D();
 	CloseWindow();
 	
 
