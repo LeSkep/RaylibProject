@@ -1,0 +1,31 @@
+# Binaries
+*.o
+*.so
+*.a
+*.bin
+*.dll
+*.exe
+# Extension-less binary on *nix:
+example/raytmx-example
+
+# Visual Studio artifacts
+.vs/
+.vscode/
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+
+# Tiled artifacts
+*.tiled-session
+
+# OS thumbnail files
+[Tt]humbs.db
+*.DS_Store

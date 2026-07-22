@@ -1,5 +1,15 @@
 #include "raylib.h"
 #include <iostream>
+#include <math.h>
+
+#define RAYTMX_IMPLEMENTATION
+#include "raytmx-main/raytmx.h"
+#include "raytmx-main/hoxml.h" 
+
+
+const int screenWidth = 800;
+const int screenHeight = 600;
+
 
 enum PlayerState
 {
@@ -9,22 +19,22 @@ enum PlayerState
 	DODGE
 };
 
+
 struct Player {
 	Vector2 position;
 	float speed;
 	float runSpeedMultiplier;
 	float dodgeSpeedMultiplier;
-	Texture2D playerIdleTexture; 
+	Texture2D playerIdleTexture;
 	Texture2D playerWalkTexture;
-	Texture2D playerRunTexture; 
-	float SPRITE_WIDTH; 
-	float SPRITE_HEIGHT; 
+	Texture2D playerRunTexture;
+	float SPRITE_WIDTH;
+	float SPRITE_HEIGHT;
 
 	PlayerState playerState = IDLE;
 	bool isMoving;
 	bool isFacingLeft;
-}; 
-
+};
 
 
 void updatePlayerMovement(Player& player, float dt, Rectangle& sourceRect, int& currentFrame, int&frameCounter, int frameSpeed, int idleFrameSpeed)
@@ -146,45 +156,56 @@ void updatePlayerMovement(Player& player, float dt, Rectangle& sourceRect, int& 
 
 int main()
 {
-
-	const int screenWidth = 800;
-	const int screenHeight = 600;
-	 
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE); 
 	InitWindow(screenWidth, screenHeight, "Finally?"); 
 	SetTargetFPS(60); 
-	
 
+	TmxMap *tileMap = LoadTMX("newmap.tmx");
+	if (tileMap == NULL) 
+	{
+		TraceLog(LOG_ERROR, "Failed to load TMX newmap.tmx"); 
+		CloseWindow();
+		return EXIT_FAILURE;
+	}
+	 
+
+	 
+
+	/*if (IsImageValid(image))
+	{
+		std::cout << "Texture Loaded very Successfully!" << std::endl;
+	}*/
+
+
+	
 	Player player; 
 	player.position = { screenWidth / 2.0f, screenHeight / 2.0f }; 
 	player.speed = 120.0f; 
-	player.runSpeedMultiplier = 1.4f;
-	player.dodgeSpeedMultiplier = 4.0f;
-	player.playerWalkTexture = LoadTexture("./16x16/16x16 Walk-Sheet.png");
+	player.runSpeedMultiplier = 1.4f; 
+	player.dodgeSpeedMultiplier = 4.0f; 
+	player.playerWalkTexture = LoadTexture("./16x16/16x16 Walk-Sheet.png"); 
 	player.playerIdleTexture = LoadTexture("./16x16/16x16 Idle-Sheet.png"); 
 	player.playerRunTexture = LoadTexture("./16x16/16x16 Run-Sheet.png"); 
 	player.SPRITE_WIDTH = 24.0f; 
 	player.SPRITE_HEIGHT = 24.0f; 
-	player.isFacingLeft = false;
+	player.isFacingLeft = false; 
 
 	Camera2D camera = { 0 };
 	camera.target = Vector2{ player.position.x + 20.0f, player.position.y + 20.0f };
 	camera.offset = Vector2{ screenWidth / 2.0f, screenHeight / 2.0f };
-	camera.zoom = 0.9f;
-
-	Rectangle textContainerRect = Rectangle { (float)screenWidth / 2 - (float)screenWidth / 4, (float)screenHeight / 2 - (float)screenHeight / 3, (float)screenWidth / 2, (float)screenHeight * 2 / 3 };
+	camera.zoom = 1.5f;
 
 
-	
 
 	// Defining the origin point on the sprite sheet to draw the correct sprite  
-	Rectangle sourceRect = { 0, 0, player.SPRITE_WIDTH, player.SPRITE_HEIGHT }; 
+	Rectangle sourceRect = { 0, 0, player.SPRITE_WIDTH, player.SPRITE_HEIGHT };
 
 
-	int frameCounter = 0; 
-	int currentFrame = 0; 
-	int frameSpeed = 6; 
+	int frameCounter = 0;
+	int currentFrame = 0;
+	int frameSpeed = 6;
 	int idleFrameSpeed = 4;
+
 	
 	if (IsTextureValid(player.playerIdleTexture) && IsTextureValid(player.playerWalkTexture) && IsTextureValid(player.playerRunTexture))
 	{
@@ -209,25 +230,31 @@ int main()
 		// Camera zoom controls
 		camera.zoom = expf(logf(camera.zoom) + ((float)GetMouseWheelMove() * 0.1f));
 
-		if (camera.zoom > 2.5f) camera.zoom = 2.5f;
-		else if (camera.zoom < 0.8f) camera.zoom = 0.8f;
+		if (camera.zoom > 2.0f) camera.zoom = 2.0f;
+		else if (camera.zoom < 1.5f) camera.zoom = 1.5f;
 
 		if (IsKeyDown(KEY_R))
 		{
-			camera.zoom = 0.9f;
+			camera.zoom = 1.5f;
 		}
 
 		BeginDrawing();
 		// Clearing background before drawing
 		ClearBackground(RAYWHITE);
 
-		BeginMode2D(camera);
+		//Rectangle* nullRect = {};
 
-		
+		BeginMode2D(camera);
+		{
+			AnimateTMX(tileMap); 
+			DrawTMX(tileMap, &camera, NULL, 0, 0, WHITE); 
+		}
+
+
 
 
 		// Defining the destination rectangle to draw the sprite at the player's position with a scale of 2.0f 
-		Rectangle destRect = { player.position.x, player.position.y, sourceRect.width * 2.0f, sourceRect.height * 2.0f }; 
+		Rectangle destRect = { player.position.x, player.position.y, sourceRect.width, sourceRect.height }; 
 		Rectangle drawRect = sourceRect;
 
 		if (player.isFacingLeft) 
@@ -265,14 +292,15 @@ int main()
 
 		DrawText("Finally, light", 10, 30, 30, LIME); 
 		
-
+		EndMode2D(); 
 		EndDrawing();
 	}
 	// Unloading the texture so it doesn't stay loaded in memory causing performance issues 
+	UnloadTMX(tileMap); 
 	UnloadTexture(player.playerWalkTexture);  
 	UnloadTexture(player.playerIdleTexture); 
 	UnloadTexture(player.playerRunTexture); 
-	EndMode2D();
+	
 	CloseWindow();
 	
 
@@ -280,7 +308,7 @@ int main()
 
 }
 
-
+ 
 
 
 
